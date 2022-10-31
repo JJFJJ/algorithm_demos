@@ -498,17 +498,15 @@ struct ListNode* deleteDuplicatesLeftOne(struct ListNode* head)
     }
 
     struct ListNode *cur = head;
-    struct ListNode *next = cur->next;
 
     struct ListNode *tmp = NULL;
-    while (next) {
-        if (cur->val == next->val) {
-            tmp = next->next;
-            cur->next = tmp;
-            free(next);
-            next = cur->next;
+    while (cur->next) {
+        if (cur->val == cur->next->val) {
+            tmp = cur->next;
+            cur->next = cur->next->next;
+            free(tmp);
+            tmp = NULL;
         } else {
-            next = next->next;
             cur = cur->next;
         }
     }
@@ -519,10 +517,15 @@ struct ListNode* deleteDuplicatesLeftOne(struct ListNode* head)
 /**
  * @brief 删除有序链表里的重复结点，重复的结点全部删除。
  *
+ * 思路：头结点也可能由于重复而被删掉，为了固定头结点的位置，添加一个Dummy结点，Dummy->next指向头结点。
+ * 利用cur指向Dummy, 通过cur->next逐步后移，检查结点是否重复。
+ * 如果重复cur指向不变，cur->next则不断后移。
+ *
  * @param head
  * @return struct ListNode*
  */
-struct ListNode* deleteDuplicates(struct ListNode* head ) {
+struct ListNode* deleteDuplicates(struct ListNode* head)
+{
     if (!head) {
         return NULL;
     }
@@ -533,12 +536,17 @@ struct ListNode* deleteDuplicates(struct ListNode* head ) {
     };
 
     struct ListNode *cur = &dummy;
+    struct ListNode *tmp = NULL;
 
     while (cur->next && cur->next->next) {
         if (cur->next->val == cur->next->next->val) {
-            int tmp = cur->next->val;
-            while (cur->next && tmp == cur->next->val) {
+            int val = cur->next->val;
+            while (cur->next && val == cur->next->val) {
+                // 循环找相同结点时，cur指向的结点不变，cur->next依次向后移动指向相同的结点。
+                tmp = cur->next;
                 cur->next = cur->next->next;
+                free(tmp);
+                tmp = NULL;
             }
         } else {
             cur = cur->next;
