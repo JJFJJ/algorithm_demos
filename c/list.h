@@ -63,7 +63,7 @@ struct ListNode* reverseBetween(struct ListNode* head, int m, int n)
         /* 抽书法 */
         tmp = cur->next;
         cur->next = tmp->next;
-        tmp->next = pre->next;
+        tmp->next = pre->next; // 注：这里不用cur
         pre->next = tmp;
     }
 
