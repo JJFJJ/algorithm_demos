@@ -2,95 +2,183 @@
 #include <string.h>
 #include <stdlib.h>
 
-struct TreeNode
+#include <stack>
+
+typedef struct TreeNode
 {
     int val;
     struct TreeNode *left;
     struct TreeNode *right;
-};
+} TreeNode;
 
-
-void preNode(struct TreeNode* root, int *arr, int *arrSize)
+#if 1
+/**
+ * @brief 递归方式实现二叉树的前序遍历
+ *
+ * @param root 二叉树的根结点
+ * @param func 结点的访问函数
+ */
+void PreorderTraverse(TreeNode *root, void (*func)(TreeNode *node))
 {
-    if (!root) {
+    if (!root || !func) {
+        return;
+    }
+    // Traverse order: root -> left -> right
+    func(root);
+    PreorderTraverse(root->left, func);
+    PreorderTraverse(root->right, func);
+}
+#else
+/**
+ * @brief 非递归方式（利用栈）实现二叉树的前序遍历
+ *
+ * @param root 二叉树的根结点
+ * @param func 结点的访问函数
+ */
+void PreorderTraverse(TreeNode *root, void (*func)(TreeNode *node))
+{
+    if (!root || !func) {
         return;
     }
 
-    // 根结点
-    arr[*arrSize] = root->val;
-    (*arrSize)++;
+    std::stack<TreeNode *> st;
+    st.push(root);
+    TreeNode *tmp = root;
+    while (tmp) {
+        // 先遍历根（或当前结点）
+        func(tmp);
 
-    // 左结点
-    if (root->left) {
-        preNode(root->left, arr, arrSize);
-    }
-
-    // 右结点
-    if (root->right) {
-        preNode(root->right, arr, arrSize);
+        // 右子树入栈，等待左子树遍历完后，再追个出栈遍历
+        // 较高层的右子树，较先入栈，较后出栈遍历
+        if (tmp->right) {
+            st.push(tmp->right);
+        }
+        if (tmp->left) {
+            tmp = tmp->left;
+        } else {
+            // 没有可用的左子树，开始出栈遍历右子树
+            if (!st.empty()) {
+                tmp = st.top();
+                st.pop();
+            } else {
+                // 栈里右子树全部出栈，没有可用的右子树，退出循环
+                break;
+            }
+        }
     }
 }
+#endif
 
+#if 1
 /**
- * @brief 前序遍历二叉树（前序遍历：根->左->右）
+ * @brief 递归方式实现中序遍历二叉树
  *
- * 思路：使用递归方法，先记录根结点，
- *      然后将每个结点当作根结点传递给下一次，直到没有叶子结点。
- *
- * @param root
- * @param returnSize
- * @return int*
+ * @param root 根结点
+ * @param func 结点的访问函数
  */
-int * preorderTraversal(struct TreeNode* root, int* returnSize)
+void InorderTraverse(TreeNode *root, void (*func)(TreeNode *node))
 {
-    int *arr = (int *)calloc(100, sizeof(int));
-    if (root && arr) {
-        *returnSize = 0;
-        preNode(root, arr, returnSize);
-    }
-
-    return arr;
-}
-
-
-void inorderNode(struct TreeNode *root, int *arr, int *arrSize)
-{
-    if (!root) {
+    if (!root || !func) {
         return;
     }
 
-    // 左结点
-    if (root->left) {
-        inorderNode(root->left, arr, arrSize);
-    }
-
-    // 根结点
-    arr[*arrSize] = root->val;
-    (*arrSize)++;
-
-    // 右结点
-    if (root->right) {
-        inorderNode(root->right, arr, arrSize);
-    }
+    // Traverse order: left -> root -> right
+    InorderTraverse(root->left, func);
+    func(root);
+    InorderTraverse(root->right, func);
 }
-
+#else
 /**
- * @brief 中序遍历二叉树（中序遍历：左->根->右）
+ * @brief 非递归实现（利用栈）二叉树的中序遍历
  *
- * @param root
- * @param returnSize
- * @return int*
+ * @param root 根结点
+ * @param func 结点的访问函数
  */
-int* inorderTraversal(struct TreeNode* root, int* returnSize )
+void InorderTraverse(TreeNode *root, void (*func)(TreeNode *node))
 {
-    int *arr = (int *)calloc(1000, sizeof(int));
-    if (root && arr) {
-        *returnSize = 0;
-        inorderNode(root, arr, returnSize);
+    if (!root || !func) {
+        return;
+    }
+    std::stack<TreeNode *> st;
+    TreeNode *tmp = root;
+    while (tmp || !st.empty()) {
+        if (tmp) {
+            // 根结点（或当前结点）入栈（包括了右子树）
+            st.push(tmp);
+            tmp = tmp->left;
+        } else {
+            // 没有左子树了，从栈里拿出结点开始遍历
+            tmp = st.top();
+            st.pop();
+
+            // 遍历根结点
+            func(tmp);
+
+            tmp = tmp->right;
+        }
+    }
+}
+#endif
+
+
+#if 0
+/**
+ * @brief 递归方式实现二叉树后序遍历
+ *
+ * @param root 根结点
+ * @param func 结点的访问函数
+ */
+void PostorderTraverse(TreeNode *root, void (*func)(TreeNode *))
+{
+    if (!root || !func) {
+        return;
+    }
+    // Traverse order: left -> right -> root
+    PostorderTraverse(root->left, func);
+    PostorderTraverse(root->right, func);
+    func(root);
+}
+#else
+
+typedef struct StackElem
+{
+    TreeNode *node;
+    bool isVisited; // true: 该栈元素已被访问过；false: 未被访问
+} StackElem;
+
+void PostorderTraverse(TreeNode *root, void (*func)(TreeNode *))
+{
+    if (!root || !func) {
+        return;
     }
 
-    return arr;
+    StackElem se;
+    std::stack<StackElem> st;
+    TreeNode *tmp = root;
+    while (tmp || !st.empty()) {
+        // 根结点（或当前结点）的左结点全部入栈
+        while (tmp) {
+            se.node = tmp;
+            se.isVisited = false;
+            st.push(se);
+            tmp = tmp->left;
+        }
+
+        // 没有左结点时，开始从栈里追个拿出来
+        se = st.top();
+        st.pop();
+        tmp = se.node;
+        if (false == se.isVisited) {
+            se.isVisited = true;
+            st.push(se); // 访问后根结点重新入栈
+            tmp = tmp->right; // 开始访问右结点
+        } else {
+            func(tmp);
+            tmp = NULL;
+        }
+    }
 }
+#endif
 
 // 层序遍历二叉树参考C++实现：vector<vector<int> > levelOrder(TreeNode* root)
 // TODO: C实现
