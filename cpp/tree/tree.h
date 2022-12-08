@@ -47,6 +47,29 @@ vector<vector<int> > levelOrder(TreeNode* root)
     return whole;
 }
 
+void levelOrder(TreeNode *root, void (*func)(TreeNode *))
+{
+    if (!root || !func) {
+        return;
+    }
+
+    std::queue<TreeNode *> q;
+    q.push(root);
+    TreeNode *tmp = NULL;
+    while (!q.empty()) {
+        tmp = q.front();
+        q.pop();
+        func(tmp);
+
+        if (tmp->left) {
+            q.push(tmp->left);
+        }
+        if (tmp->right) {
+            q.push(tmp->right);
+        }
+    }
+}
+
 /**
  * @brief 以之字形输出二叉树
  *

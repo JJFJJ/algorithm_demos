@@ -180,8 +180,13 @@ void PostorderTraverse(TreeNode *root, void (*func)(TreeNode *))
 }
 #endif
 
-// 层序遍历二叉树参考C++实现：vector<vector<int> > levelOrder(TreeNode* root)
-// TODO: C实现
+/**
+ * @brief 二叉树的层序遍历利用到了队列的特性，
+ * 具体参考C++的实现：vector<vector<int> > levelOrder(TreeNode* root)
+ *
+ * TODO: C实现
+ */
+
 
 /**
  * @brief 求给的二叉树的最大深度
