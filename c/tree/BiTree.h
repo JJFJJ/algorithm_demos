@@ -1,14 +1,31 @@
+/**
+ * @file BiTree.h
+ * @author sunxianbin@gmail.com or mysunxianbin@163.com
+ * @brief 二叉树常见的一些算法实现
+ * @version 0.1
+ * @date 2022-12-12
+ *
+ * @copyright Copyright (c) 2022
+ *
+ */
+#ifndef _BI_TREE_H_
+#define _BI_TREE_H_
+
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
 
+#ifdef __cplusplus
 #include <stack>
+
+extern "C" {
+#endif
 
 typedef struct TreeNode
 {
     int val;
-    struct TreeNode *left;
-    struct TreeNode *right;
+    struct TreeNode *lchild;
+    struct TreeNode *rchild;
 } TreeNode;
 
 #if 1
@@ -25,8 +42,8 @@ void PreorderTraverse(TreeNode *root, void (*func)(TreeNode *node))
     }
     // Traverse order: root -> left -> right
     func(root);
-    PreorderTraverse(root->left, func);
-    PreorderTraverse(root->right, func);
+    PreorderTraverse(root->lchild, func);
+    PreorderTraverse(root->rchild, func);
 }
 #else
 /**
@@ -50,11 +67,11 @@ void PreorderTraverse(TreeNode *root, void (*func)(TreeNode *node))
 
         // 右子树入栈，等待左子树遍历完后，再追个出栈遍历
         // 较高层的右子树，较先入栈，较后出栈遍历
-        if (tmp->right) {
-            st.push(tmp->right);
+        if (tmp->rchild) {
+            st.push(tmp->rchild);
         }
-        if (tmp->left) {
-            tmp = tmp->left;
+        if (tmp->lchild) {
+            tmp = tmp->lchild;
         } else {
             // 没有可用的左子树，开始出栈遍历右子树
             if (!st.empty()) {
@@ -83,9 +100,9 @@ void InorderTraverse(TreeNode *root, void (*func)(TreeNode *node))
     }
 
     // Traverse order: left -> root -> right
-    InorderTraverse(root->left, func);
+    InorderTraverse(root->lchild, func);
     func(root);
-    InorderTraverse(root->right, func);
+    InorderTraverse(root->rchild, func);
 }
 #else
 /**
@@ -105,7 +122,7 @@ void InorderTraverse(TreeNode *root, void (*func)(TreeNode *node))
         if (tmp) {
             // 根结点（或当前结点）入栈（包括了右子树）
             st.push(tmp);
-            tmp = tmp->left;
+            tmp = tmp->lchild;
         } else {
             // 没有左子树了，从栈里拿出结点开始遍历
             tmp = st.top();
@@ -114,14 +131,14 @@ void InorderTraverse(TreeNode *root, void (*func)(TreeNode *node))
             // 遍历根结点
             func(tmp);
 
-            tmp = tmp->right;
+            tmp = tmp->rchild;
         }
     }
 }
 #endif
 
 
-#if 0
+#if 1
 /**
  * @brief 递归方式实现二叉树后序遍历
  *
@@ -134,8 +151,8 @@ void PostorderTraverse(TreeNode *root, void (*func)(TreeNode *))
         return;
     }
     // Traverse order: left -> right -> root
-    PostorderTraverse(root->left, func);
-    PostorderTraverse(root->right, func);
+    PostorderTraverse(root->lchild, func);
+    PostorderTraverse(root->rchild, func);
     func(root);
 }
 #else
@@ -161,7 +178,7 @@ void PostorderTraverse(TreeNode *root, void (*func)(TreeNode *))
             se.node = tmp;
             se.isVisited = false;
             st.push(se);
-            tmp = tmp->left;
+            tmp = tmp->lchild;
         }
 
         // 没有左结点时，开始从栈里追个拿出来
@@ -171,7 +188,7 @@ void PostorderTraverse(TreeNode *root, void (*func)(TreeNode *))
         if (false == se.isVisited) {
             se.isVisited = true;
             st.push(se); // 访问后根结点重新入栈
-            tmp = tmp->right; // 开始访问右结点
+            tmp = tmp->rchild; // 开始访问右结点
         } else {
             func(tmp);
             tmp = NULL;
@@ -191,7 +208,7 @@ void PostorderTraverse(TreeNode *root, void (*func)(TreeNode *))
 /**
  * @brief 求给的二叉树的最大深度
  *
- * @param root
+ * @param root 二叉树的根结点
  * @return int
  */
 int maxDepth(struct TreeNode *root)
@@ -199,8 +216,8 @@ int maxDepth(struct TreeNode *root)
     if (!root) {
         return 0;
     }
-    int maxDepath_left = maxDepth(root->left);
-    int maxDepath_right = maxDepth(root->right);
+    int maxDepath_left = maxDepth(root->lchild);
+    int maxDepath_right = maxDepth(root->rchild);
     return (maxDepath_left > maxDepath_right ? (maxDepath_left + 1) : (maxDepath_right + 1));
 
     // 非递归实现：利用队列进行层序遍历，记录下最深层次。
@@ -230,67 +247,28 @@ bool hasPathSum(struct TreeNode* root, int sum )
     // 利用递归来实现，递归退出的条件：
     // 1. 是叶子结点；
     // 2. 叶子结点的值 等于 余数。（注：该余数为sum减去每一次递归的根结点的值。
-    if (!root->left && !root->right && (0 == sum - root->val)) {
+    if (!root->lchild && !root->rchild && (0 == sum - root->val)) {
         return true;
     }
 
-    return (hasPathSum(root->left, sum - root->val) || hasPathSum(root->right, sum - root->val));
-}
-
-/**
- * @brief 输入一棵二叉搜索树，将该二叉搜索树转换成一个排序的双向链表
- *
- * 思路：中序遍历+递归
- *
- * @param pRoot
- * @return struct TreeNode*
- */
-struct TreeNode* Tree2DLinkedList(struct TreeNode* pRoot)
-{
-    static struct TreeNode *pre = NULL;
-    static struct TreeNode *cur = NULL;
-
-    // 1. 递归退出的条件
-    if (!pRoot) {
-        return NULL;
-    }
-
-    // 2. 遍历左子树（递归降阶）
-    Tree2DLinkedList(pRoot->left);
-
-    if (!cur) {
-        // 2.1 递归到最底层的最左结点时，pre == NULL, cur == NULL.
-        pre = pRoot;
-        cur = pRoot;
-    } else {
-        // 2.2 当pRooT指向根结点时，连接cur和pRoot，cur后移
-        cur->right = pRoot;
-        pRoot->left = cur;
-        cur = pRoot;
-    }
-
-    // 3. 遍历右子树（递归降阶）
-    Tree2DLinkedList(pRoot->right);
-
-    return pre;
+    return (hasPathSum(root->lchild, sum - root->val) || hasPathSum(root->rchild, sum - root->val));
 }
 
 
-
-bool recursive(struct TreeNode *left, struct TreeNode *right)
+bool recursive(struct TreeNode *lchild, struct TreeNode *rchild)
 {
     // 1. 递归结束条件
-    if (!left && !right) {
+    if (!lchild && !rchild) {
         // 左叶子和右叶子都为NULL，对称
         return true;
     }
-    if (!left || !right || (left->val != right->val)) {
+    if (!lchild || !rchild || (lchild->val != rchild->val)) {
         // 左叶子或右叶子不为空，或者值不相等，不对称
         return false;
     }
 
     // 2. 递归（降阶）
-    return recursive(left->left, right->right) && recursive(left->right, right->left);
+    return recursive(lchild->lchild, rchild->rchild) && recursive(lchild->rchild, rchild->lchild);
 }
 
 /**
@@ -329,8 +307,8 @@ struct TreeNode *mergeTrees(struct TreeNode *t1, struct TreeNode *t2)
         abort();
     }
     node->val = t1->val + t2->val;
-    node->left = mergeTrees(t1->left, t2->left);
-    node->right = mergeTrees(t1->right, t2->right);
+    node->lchild = mergeTrees(t1->lchild, t2->lchild);
+    node->rchild = mergeTrees(t1->rchild, t2->rchild);
     return node;
 }
 
@@ -348,94 +326,14 @@ struct TreeNode* mirrorTree(struct TreeNode* pRoot )
     }
 
     // 2. 递归降阶
-    struct TreeNode *left = mirrorTree(pRoot->left);
-    struct TreeNode *right = mirrorTree(pRoot->right);
+    struct TreeNode *lchild = mirrorTree(pRoot->lchild);
+    struct TreeNode *rchild = mirrorTree(pRoot->rchild);
 
     // 3. 找到最小的结点（只有左右叶子），开始交换。
-    pRoot->left = right;
-    pRoot->right = left;
+    pRoot->lchild = rchild;
+    pRoot->rchild = lchild;
 
     return pRoot;
-}
-
-/**
- * @brief 给定一个二叉树根节点，请你判断这棵树是不是二叉搜索树。
- * 二叉搜索树满足每个节点的左子树上的所有节点均小于当前节点且右子树上的所有节点均大于当前节点。
- *
- * @param root
- * @return true
- * @return false
- */
-
-static struct TreeNode *pre = NULL; // 用于记录当前遍历结点的前一个结点
-bool isValidBST(struct TreeNode* root)
-{
-    // 利用递归，加上 左 < 根 < 右 这种要求，正好符合中序遍历
-
-    // 1. 递归结束条件
-    if (!root) {
-        return true;
-    }
-
-    // 2. 按照中序遍历的顺序（左 -> 中 -> 右）开始递归判断每一个子树
-    if (!isValidBST(root->left)) {
-        return false;
-    }
-
-    if (!pre) {
-        pre = root;
-    } else {
-        if (pre->val >= root->val) {
-            return false;
-        }
-        pre = root;
-    }
-
-    if (!isValidBST(root->right)) {
-        return false;
-    }
-    return true;
-}
-
-
-int balancedSubTree(struct TreeNode *node)
-{
-    if (!node) {
-        return 0;
-    }
-    int left_h = balancedSubTree(node->left);
-    if (left_h < 0) {
-        return -1;
-    }
-    int right_h = balancedSubTree(node->right);
-    if (right_h < 0) {
-        return -1;
-    }
-    if (abs(left_h - right_h) > 1) {
-        return -1;
-    }
-    return left_h >= right_h ? left_h : right_h;
-}
-
-/**
- * @brief 判断一个二叉树是否为平衡二叉树
- *
- * 平衡二叉树定义：一棵空树，或者它左右子树的高度绝对值不超过1，并且左右子树也是一个平衡二叉树。
- *
- * 思路：树和子树都得时二叉树，明显用递归来实现。
- *      递归每个子树，然后返回子树的最大高度，再和相邻的子树递归返回的高度比较。
- *
- * @param pRoot
- * @return true
- * @return false
- */
-bool isBalancedTree(struct TreeNode* pRoot)
-{
-    if (balancedSubTree(pRoot) < 0) {
-        return false;
-    } else {
-        return true;
-    }
 }
 
 /**
@@ -459,8 +357,8 @@ int lowestCommonAncestor(struct TreeNode* root, int o1, int o2 )
         return root->val;
     }
 
-    int left = lowestCommonAncestor(root->left, o1, o2);
-    int right = lowestCommonAncestor(root->right, o1, o2);
+    int left = lowestCommonAncestor(root->lchild, o1, o2);
+    int right = lowestCommonAncestor(root->rchild, o1, o2);
     if (-1 == left) {
         // o1和o2一个都不在左子树，那么一定都在右子树
         return right;
@@ -490,8 +388,8 @@ void SerializeFunc(struct TreeNode *node, char *str, int size)
         snprintf(str + len, size - len, "#,");
     } else {
         snprintf(str + len, size - len, "%d,", node->val);
-        SerializeFunc(node->left, str, size);
-        SerializeFunc(node->right, str, size);
+        SerializeFunc(node->lchild, str, size);
+        SerializeFunc(node->rchild, str, size);
     }
 }
 char* Serialize(struct TreeNode* root ) {
@@ -520,8 +418,8 @@ struct TreeNode* Deserialize(char* str ) {
     index++; // skip the ','
     struct TreeNode *node = (struct TreeNode *)calloc(1, sizeof(struct TreeNode));
     node->val = value;
-    node->left = Deserialize(str);
-    node->right = Deserialize(str);
+    node->lchild = Deserialize(str);
+    node->rchild = Deserialize(str);
     return node;
 }
 
@@ -554,8 +452,8 @@ struct TreeNode* reConstructBinaryTree(int* pre, int preLen, int* vin, int vinLe
             node = (struct TreeNode *)calloc(1, sizeof(struct TreeNode *));
             node->val = pre[0];
 
-            node->left = reConstructBinaryTree(pre + 1, i, vin, i);
-            node->right = reConstructBinaryTree(pre + i + 1, (preLen - i - 1), vin + i + 1, (vinLen - i - 1));
+            node->lchild = reConstructBinaryTree(pre + 1, i, vin, i);
+            node->rchild = reConstructBinaryTree(pre + i + 1, (preLen - i - 1), vin + i + 1, (vinLen - i - 1));
             break;
         }
     }
@@ -563,3 +461,8 @@ struct TreeNode* reConstructBinaryTree(int* pre, int preLen, int* vin, int vinLe
 
     return node;
 }
+
+#ifdef __cplusplus
+}
+#endif
+#endif // _BI_TREE_H_
